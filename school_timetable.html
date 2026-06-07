@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchoolTime — Indian School Timetable Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117;
+    --ink-soft: #3a3d4a;
+    --ink-mute: #7a7d8a;
+    --paper: #fafaf8;
+    --paper-warm: #f4f2ec;
+    --paper-mid: #e8e5dc;
+    --accent: #c84b2f;
+    --accent-light: #f5e8e4;
+    --accent2: #1a6b4a;
+    --accent2-light: #e0f0ea;
+    --blue: #2563a8;
+    --blue-light: #ddeaf8;
+    --gold: #b8860b;
+    --gold-light: #fdf5dc;
+    --border: #d8d5cc;
+    --shadow: 0 2px 8px rgba(15,17,23,0.08);
+    --shadow-lg: 0 8px 32px rgba(15,17,23,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .app-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--paper);
+  }
+  .app-logo span { color: var(--accent); }
+  .app-tagline {
+    font-size: 12px;
+    color: #8a8d99;
+    margin-left: 4px;
+  }
+  .step-nav {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+  .step-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #2a2d37;
+    color: #6a6d79;
+    border: 2px solid transparent;
+  }
+  .step-dot.done { background: var(--accent2); color: white; }
+  .step-dot.active { background: var(--accent); color: white; border-color: #ff8060; }
+  .step-dot:hover:not(.active) { background: #3a3d47; color: var(--paper); }
+
+  /* ── MAIN ── */
+  .main-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  /* ── STEP HEADER ── */
+  .step-header {
+    margin-bottom: 28px;
+  }
+  .step-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .step-desc {
+    color: var(--ink-mute);
+    font-size: 14px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--paper-mid);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--paper-warm);
+    color: var(--ink-mute);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .form-group.full { grid-column: 1 / -1; }
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: 0.3px;
+  }
+  label .hint {
+    font-weight: 400;
+    color: var(--ink-mute);
+    margin-left: 4px;
+  }
+  input[type=text], input[type=number], input[type=time], select, textarea {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--paper);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+    background: white;
+  }
+  input[type=checkbox] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    cursor: pointer;
+  }
+  .check-row label { cursor: pointer; font-size: 13px; font-weight: 400; color: var(--ink); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.2px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(200,75,47,0.3);
+  }
+  .btn-primary:hover { background: #b03a20; box-shadow: 0 4px 16px rgba(200,75,47,0.4); transform: translateY(-1px); }
+  .btn-secondary {
+    background: white;
+    color: var(--ink);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--ink-soft); background: var(--paper-warm); }
+  .btn-green {
+    background: var(--accent2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(26,107,74,0.3);
+  }
+  .btn-green:hover { background: #145a3c; transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-mute);
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .btn-ghost:hover { color: var(--accent); background: var(--accent-light); }
+  .btn-danger { background: #fef2f2; color: #c84b2f; border: 1.5px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-lg { padding: 14px 28px; font-size: 15px; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+  /* ── STEP NAVIGATION ── */
+  .step-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 28px;
+  }
+
+  /* ── TEACHER CARD ── */
+  .teacher-card {
+    background: var(--paper);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .teacher-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .teacher-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .teacher-name { font-weight: 700; font-size: 14px; }
+  .teacher-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--paper-mid);
+    padding: 2px 7px;
+    border-radius: 5px;
+    color: var(--ink-soft);
+  }
+  .teacher-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .tag-ct { background: var(--gold-light); color: var(--gold); }
+  .tag-sub { background: var(--blue-light); color: var(--blue); }
+  .tag-core { background: var(--accent2-light); color: var(--accent2); }
+
+  /* ── PERIOD TABLE ── */
+  .period-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .period-table th {
+    background: var(--paper-warm);
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--ink-soft);
+    border-bottom: 2px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .period-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--paper-mid);
+    vertical-align: middle;
+  }
+  .period-table tr:hover td { background: var(--paper-warm); }
+  .period-table input[type=time] { padding: 5px 8px; font-size: 12px; }
+  .period-table input[type=text] { padding: 5px 8px; font-size: 12px; }
+  .period-table select { padding: 5px 8px; font-size: 12px; }
+
+  /* ── TIMETABLE GRID ── */
+  .tt-wrap { overflow-x: auto; }
+  .tt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 700px;
+  }
+  .tt-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .tt-table th.day-col { width: 80px; }
+  .tt-table td {
+    border: 1px solid var(--border);
+    padding: 0;
+    vertical-align: top;
+    min-width: 90px;
+  }
+  .tt-cell {
+    padding: 6px 8px;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background 0.15s;
+  }
+  .tt-cell:hover { background: var(--paper-warm); }
+  .tt-cell .subj {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .tt-cell .teacher-code-sm {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-mute);
+  }
+  .tt-cell.break-cell {
+    background: var(--paper-warm);
+    justify-content: center;
+    align-items: center;
+  }
+  .tt-cell.break-cell span {
+    font-size: 10px;
+    color: var(--ink-mute);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tt-cell.period1 { background: linear-gradient(135deg, #e0f0ea 0%, #f0faf5 100%); }
+  .tt-cell.double { background: linear-gradient(135deg, #ddeaf8 0%, #eef5fc 100%); border-left: 3px solid var(--blue); }
+  .tt-cell.free-cell { background: #f9f9f9; }
+  .tt-cell.free-cell span { font-size: 11px; color: #c0c0c0; }
+  .tt-row-day {
+    background: var(--paper-warm);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 12px;
+    text-align: center;
+    border-right: 2px solid var(--border);
+    vertical-align: middle;
+  }
+  .tt-row-day .day-label { color: var(--ink); font-size: 12px; }
+  .tt-row-day .half-badge {
+    font-size: 9px;
+    background: var(--gold-light);
+    color: var(--gold);
+    padding: 1px 5px;
+    border-radius: 3px;
+    display: block;
+    margin-top: 2px;
+    text-align: center;
+  }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    background: var(--paper-warm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-mute);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: white;
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  .tab-btn:hover:not(.active) { color: var(--ink); background: rgba(255,255,255,0.5); }
+
+  /* ── ALERTS ── */
+  .alert {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .alert-info { background: var(--blue-light); color: var(--blue); border: 1px solid #b3d4f5; }
+  .alert-warn { background: var(--gold-light); color: var(--gold); border: 1px solid #e8d080; }
+  .alert-success { background: var(--accent2-light); color: var(--accent2); border: 1px solid #a0d8c0; }
+  .alert-error { background: var(--accent-light); color: var(--accent); border: 1px solid #f5b8a8; }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── RULES LIST ── */
+  .rule-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    background: var(--paper);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .rule-item .rule-icon { font-size: 16px; }
+  .rule-item .rule-text { flex: 1; font-size: 13px; color: var(--ink-soft); }
+  .rule-item .rule-status { font-size: 12px; font-weight: 600; color: var(--accent2); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--ink-mute);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+  .divider-label {
+    text-align: center;
+    position: relative;
+    margin: 20px 0;
+    color: var(--ink-mute);
+    font-size: 12px;
+  }
+  .divider-label::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .divider-label span {
+    background: white;
+    padding: 0 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── SUBJECT ASSIGNMENT ── */
+  .subj-assign-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px 50px 50px 30px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--paper-mid);
+    font-size: 12px;
+  }
+  .subj-assign-row:last-child { border-bottom: none; }
+  .subj-assign-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── CLASS SECTION INPUT ── */
+  .class-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+  }
+  .class-row input { flex: 1; }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    .app-header, .step-nav-bar, .btn-group, .tab-bar { display: none !important; }
+    .card { box-shadow: none; border: 1px solid #ccc; }
+    body { background: white; }
+    .main-wrap { padding: 0; }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar-wrap {
+    background: var(--paper-mid);
+    border-radius: 4px;
+    height: 4px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── COLLAPSIBLE ── */
+  .collapsible-body { display: none; }
+  .collapsible-body.open { display: block; }
+  .collapse-toggle {
+    cursor: pointer;
+    user-select: none;
+  }
+  .collapse-arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    color: var(--ink-mute);
+  }
+  .collapse-arrow.open { transform: rotate(180deg); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--ink-mute);
+  }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; }
+
+  /* ── LOADING ── */
+  .loader-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px;
+    gap: 16px;
+  }
+  .loader {
+    width: 36px; height: 36px;
+    border: 3px solid var(--paper-mid);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Utility */
+  .text-mute { color: var(--ink-mute); }
+  .text-sm { font-size: 12px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .items-center { align-items: center; }
+  .ml-auto { margin-left: auto; }
+  .hidden { display: none !important; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .tt-section-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    margin: 20px 0 12px;
+    color: var(--ink);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .conflicts-list { list-style: none; padding: 0; }
+  .conflicts-list li {
+    padding: 8px 12px;
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    margin-bottom: 6px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 12px;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <div class="app-logo">School<span>Time</span></div>
+    <div class="app-tagline">Indian School Timetable Generator</div>
+  </div>
+  <div class="step-nav" id="stepNav"></div>
+</header>
+
+<div class="main-wrap">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar" style="width:20%"></div>
+  </div>
+  <div id="appContent"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  currentStep: 1,
+
+  // Step 1
+  schoolName: '',
+  board: 'CBSE',
+  classrooms: [], // [{id, name, section}]
+  days: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+  halfDay: 'Saturday',
+  fullDayPeriods: 8,
+  halfDayPeriods: 4,
+  fullDayBreaks: [], // [{afterPeriod, duration, label}]
+  halfDayBreaks: [],
+  fullDayTimings: [], // [{start,end}] for each period+break slot
+  halfDayTimings: [],
+  valueEdPeriod: 5,
+  fixedPeriod: 1,
+  fixedPeriodSubject: 'Assembly / Morning Prayer',
+  minPeriodsPerTeacher: 18,
+  maxPeriodsPerTeacher: 26,
+
+  // Step 2
+  teachers: [], // [{id,name,code,isClassTeacher,classTeacherOf,subjects:[{classId,subject,periodsPerWeek,isDouble,isCore}]}]
+
+  // Step 3 — scheduling rules confirmed
+  rulesConfirmed: true,
+  customRules: [],
+
+  // Step 4 — generated timetable
+  timetable: null, // {[classId]: {[day]: [slot]}} slot = {subject,teacherCode,isBreak,breakLabel,isFree}
+  conflicts: [],
+  teacherLoads: {}, // {teacherCode: weeklyCount}
+};
+
+// ══════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════
+function uid() { return Math.random().toString(36).slice(2,8); }
+
+function genTeacherCode(name, existing) {
+  let base = name.trim().split(/\s+/).map(w=>w[0].toUpperCase()).join('');
+  if (base.length < 2) base = name.slice(0,3).toUpperCase();
+  let code = base;
+  let i = 2;
+  while (existing.includes(code)) { code = base + i++; }
+  return code;
+}
+
+function timeAdd(time, minutes) {
+  let [h, m] = time.split(':').map(Number);
+  m += minutes;
+  h += Math.floor(m/60);
+  m = m%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function timeDiff(t1, t2) {
+  const [h1,m1] = t1.split(':').map(Number);
+  const [h2,m2] = t2.split(':').map(Number);
+  return (h2*60+m2) - (h1*60+m1);
+}
+
+// ══════════════════════════════════════════════
+// RENDER ENGINE
+// ══════════════════════════════════════════════
+function render() {
+  updateStepNav();
+  document.getElementById('progressBar').style.width = (state.currentStep / 5 * 100) + '%';
+  const c = document.getElementById('appContent');
+  switch(state.currentStep) {
+    case 1: c.innerHTML = renderStep1(); bindStep1(); break;
+    case 2: c.innerHTML = renderStep2(); bindStep2(); break;
+    case 3: c.innerHTML = renderStep3(); bindStep3(); break;
+    case 4: c.innerHTML = renderStep4(); bindStep4(); break;
+    case 5: c.innerHTML = renderStep5(); bindStep5(); break;
+  }
+}
+
+function updateStepNav() {
+  const nav = document.getElementById('stepNav');
+  const labels = ['Setup','Teachers','Rules','Generate','Export'];
+  nav.innerHTML = labels.map((l,i) => {
+    const n = i+1;
+    const cls = n < state.currentStep ? 'done' : n === state.currentStep ? 'active' : '';
+    return `<div class="step-dot ${cls}" onclick="goStep(${n})" title="Step ${n}: ${l}">${n < state.currentStep ? '✓' : n}</div>`;
+  }).join('');
+}
+
+function goStep(n) {
+  if (n <= state.currentStep || n === state.currentStep + 1) {
+    state.currentStep = n;
+    render();
+    window.scrollTo(0,0);
+  }
+}
+
+function nextStep() { state.currentStep++; render(); window.scrollTo(0,0); }
+function prevStep() { state.currentStep--; render(); window.scrollTo(0,0); }
+
+// ══════════════════════════════════════════════
+// STEP 1 — SCHOOL SETUP
+// ══════════════════════════════════════════════
+function renderStep1() {
+  const classRows = state.classrooms.map((c,i) => `
+    <div class="class-row" id="clsrow-${c.id}">
+      <span class="mono text-sm" style="color:var(--ink-mute);min-width:22px">${i+1}.</span>
+      <input type="text" placeholder="Class (e.g. 8)" value="${c.name}" oninput="state.classrooms[${i}].name=this.value" style="max-width:120px">
+      <span class="text-mute">–</span>
+      <input type="text" placeholder="Section (e.g. A)" value="${c.section}" oninput="state.classrooms[${i}].section=this.value" style="max-width:80px">
+      <span class="text-mute text-sm ml-auto">${c.name}${c.section ? ' '+c.section : ''}</span>
+      <button class="btn btn-ghost btn-sm" onclick="removeClassroom('${c.id}')">✕</button>
+    </div>
+  `).join('');
+
+  const dayChecks = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => `
+    <label class="check-row">
+      <input type="checkbox" ${state.days.includes(d)?'checked':''} onchange="toggleDay('${d}',this.checked)">
+      <label>${d}</label>
+    </label>
+  `).join('');
+
+  const halfDayOpts = state.days.map(d => `<option value="${d}" ${state.halfDay===d?'selected':''}>${d}</option>`).join('');
+  const halfDayNoneOpt = `<option value="" ${!state.halfDay?'selected':''}>— None (all full days) —</option>`;
+
+  // Period timings for full day
+  const fullSlots = buildSlotList(state.fullDayPeriods, state.fullDayBreaks);
+  const halfSlots = buildSlotList(state.halfDayPeriods, state.halfDayBreaks);
+
+  const fullTimingRows = fullSlots.map((slot, i) => {
+    const t = state.fullDayTimings[i] || {start:'08:00',end:'08:45'};
+    return `<tr>
+      <td>${slot.isBreak ? `🍽 Break ${slot.breakIdx+1}` : `Period ${slot.periodNum}`}</td>
+      <td><input type="time" value="${t.start}" onchange="updateTiming('full',${i},'start',this.value)"></td>
+      <td><input type="time" value="${t.end}" onchange="updateTiming('full',${i},'end',this.value)"></td>
+      <td>${slot.isBreak ? `<input type="text" placeholder="Lunch / Short Break" value="${state.fullDayBreaks[slot.breakIdx]?.label||''}" oninput="state.fullDayBreaks[${slot.breakIdx}].label=this.value">` : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const halfTimingRows = halfSlots.map((slot, i) => {
+    const t = state.halfDayTimings[i] || {start:'08:00',end:'08:40'};
+    return `<tr>
+      <td>${slot.isBreak ? `🍽 Break` : `Period ${slot.periodNum}`}</td>
+      <td><input type="time" value="${t.start}" onchange="updateTiming('half',${i},'start',this.value)"></td>
+      <td><input type="time" value="${t.end}" onchange="updateTiming('half',${i},'end',this.value)"></td>
+      <td>—</td>
+    </tr>`;
+  }).join('');
+
+  const periodOpts = (n) => Array.from({length:n},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+
+  return `
+  <div class="step-header">
+    <div class="step-label">Step 1 of 5</div>
+    <h1 class="step-title">School Setup</h1>
+    <p class="step-desc">Configure your school's basic information, classroom structure, and schedule timings.</p>
+  </div>
+
+  <!-- School Info -->
+  <div class="card">
+    <div class="card-title">🏫 School Information</div>
+    <div class="form-row cols-3">
+      <div class="form-group full">
+        <label>School Name</label>
+        <input type="text" placeholder="e.g. Delhi Public School, R.K. Puram" value="${state.schoolName}" oninput="state.schoolName=this.value">
+      </div>
+      <div class="form-group">
+        <label>Board / Affiliation</label>
+        <select onchange="state.board=this.value">
+          <option value="CBSE" ${state.board==='CBSE'?'selected':''}>CBSE</option>
+          <option value="ICSE" ${state.board==='ICSE'?'selected':''}>ICSE</option>
+          <option value="State Board" ${state.board==='State Board'?'selected':''}>State Board</option>
+          <option value="IB" ${state.board==='IB'?'selected':''}>IB</option>
+          <option value="Other" ${state.board==='Other'?'selected':''}>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Classrooms -->
+  <div class="card">
+    <div class="card-title">🎒 Classrooms / Sections <span class="badge">${state.classrooms.length} added</span></div>
+    ${classRows || '<div class="empty-state" style="padding:16px"><div class="empty-state-icon">📚</div><div class="empty-state-text">No classrooms added yet</div></div>'}
+    <div class="btn-group" style="margin-top:12px">
+      <button class="btn btn-secondary btn-sm" onclick="addClassroom()">+ Add Classroom</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBulkClassrooms()">+ Bulk Add (e.g. 6A,6B,7A…)</button>
+    </div>
+  </div>
+
+  <!-- Week Structure -->
+  <div class="card">
+    <div class="card-title">📅 Week Structure</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>School Days</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:4px">${dayChecks}</div>
+      </div>
+      <div class="form-group">
+        <label>Half-Day / Short Day</label>
+        <select onchange="state.halfDay=this.value">${halfDayNoneOpt}${halfDayOpts}</select>
+        <small class="text-mute">Select which day has fewer periods</small>
+      </div>
+    </div>
+    <div class="form-row cols-4">
+      <div class="form-group">
+        <label>Periods per Full Day</label>
+        <input type="number" min="4" max="12" value="${state.fullDayPeriods}" onchange="state.fullDayPeriods=+this.value;autoInitTimings();render()">
+      </div>
+      <div class="form-group">
+        <label>Periods on Half Day</label>
+        <input type="number" min="2" max="8" value="${state.halfDayPeriods}" onchange="state.halfDayPeriods=+this.value;autoInitTimings();render()">
+      </div>
+      <div class="form-group">
+        <label>Breaks (Full Day)</label>
+        <input type="number" min="0" max="4" value="${state.fullDayBreaks.length}" onchange="resizeBreaks('full',+this.value);render()">
+      </div>
+      <div class="form-group">
+        <label>Breaks (Half Day)</label>
+        <input type="number" min="0" max="2" value="${state.halfDayBreaks.length}" onchange="resizeBreaks('half',+this.value);render()">
+      </div>
+    </div>
+    ${state.fullDayBreaks.length > 0 ? `
+    <div class="mt-16">
+      <label>Break Placement (Full Day) — after which period?</label>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+        ${state.fullDayBreaks.map((b,i) => `
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="text-sm text-mute">Break ${i+1} after period:</span>
+            <select style="width:70px" onchange="state.fullDayBreaks[${i}].afterPeriod=+this.value">
+              ${periodOpts(state.fullDayPeriods).replace(`value="${b.afterPeriod}"`,`value="${b.afterPeriod}" selected`)}
+            </select>
+            <span class="text-sm text-mute">Duration:</span>
+            <input type="number" min="5" max="60" value="${b.duration}" style="width:60px" onchange="state.fullDayBreaks[${i}].duration=+this.value">
+            <span class="text-sm text-mute">min</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+  </div>
+
+  <!-- Period Timings Full Day -->
+  <div class="card">
+    <div class="card-title">⏰ Period Timings — Full Day</div>
+    <div class="tt-wrap">
+      <table class="period-table">
+        <thead><tr><th>Slot</th><th>Start Time</th><th>End Time</th><th>Label (for breaks)</th></tr></thead>
+        <tbody>${fullTimingRows}</tbody>
+      </table>
+    </div>
+    <button class="btn btn-secondary btn-sm mt-8" onclick="autoFillTimings('full')">⚡ Auto-fill from Period 1 start</button>
+  </div>
+
+  ${state.halfDay ? `
+  <div class="card">
+    <div class="card-title">⏰ Period Timings — Half Day (${state.halfDay})</div>
+    <div class="tt-wrap">
+      <table class="period-table">
+        <thead><tr><th>Slot</th><th>Start Time</th><th>End Time</th><th>Label</th></tr></thead>
+        <tbody>${halfTimingRows}</tbody>
+      </table>
+    </div>
+    <button class="btn btn-secondary btn-sm mt-8" onclick="autoFillTimings('half')">⚡ Auto-fill from Period 1 start</button>
+  </div>` : ''}
+
+  <!-- Special Periods -->
+  <div class="card">
+    <div class="card-title">📌 Special Period Rules</div>
+    <div class="form-row cols-4">
+      <div class="form-group">
+        <label>Value Ed. Period # <span class="hint">(all days)</span></label>
+        <input type="number" min="1" max="${state.fullDayPeriods}" value="${state.valueEdPeriod}" oninput="state.valueEdPeriod=+this.value">
+        <small class="text-mute">This period is for Value Education / Moral Science</small>
+      </div>
+      <div class="form-group">
+        <label>Fixed Period # <span class="hint">(all days)</span></label>
+        <input type="number" min="1" max="${state.fullDayPeriods}" value="${state.fixedPeriod}" oninput="state.fixedPeriod=+this.value">
+        <small class="text-mute">All classes share same subject in this period</small>
+      </div>
+      <div class="form-group">
+        <label>Fixed Period Subject</label>
+        <input type="text" value="${state.fixedPeriodSubject}" oninput="state.fixedPeriodSubject=this.value">
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div class="form-group">
+        <label>Min Weekly Periods / Teacher</label>
+        <input type="number" min="1" max="40" value="${state.minPeriodsPerTeacher}" oninput="state.minPeriodsPerTeacher=+this.value">
+      </div>
+      <div class="form-group">
+        <label>Max Weekly Periods / Teacher</label>
+        <input type="number" min="1" max="50" value="${state.maxPeriodsPerTeacher}" oninput="state.maxPeriodsPerTeacher=+this.value">
+      </div>
+    </div>
+  </div>
+
+  <div class="step-nav-bar">
+    <span class="text-mute text-sm">Complete all fields to proceed</span>
+    <button class="btn btn-primary btn-lg" onclick="validateStep1()">Continue to Teachers →</button>
+  </div>`;
+}
+
+function buildSlotList(numPeriods, breaks) {
+  const slots = [];
+  let pNum = 0;
+  for (let i = 1; i <= numPeriods; i++) {
+    pNum++;
+    slots.push({ isBreak: false, periodNum: pNum });
+    const b = breaks.find(br => br.afterPeriod === i);
+    if (b) {
+      slots.push({ isBreak: true, breakIdx: breaks.indexOf(b) });
+    }
+  }
+  return slots;
+}
+
+function bindStep1() {}
+
+function addClassroom() {
+  state.classrooms.push({ id: uid(), name: '', section: '' });
+  render();
+}
+
+function removeClassroom(id) {
+  state.classrooms = state.classrooms.filter(c => c.id !== id);
+  render();
+}
+
+function addBulkClassrooms() {
+  const input = prompt('Enter classrooms separated by comma (e.g. 6A,6B,7A,7B,8A):');
+  if (!input) return;
+  input.split(',').forEach(raw => {
+    const s = raw.trim();
+    if (!s) return;
+    // parse like "8A" → name=8, section=A or "Class 10 B" etc.
+    const match = s.match(/^([^\s]+)\s*([A-Z]?)$/i);
+    state.classrooms.push({ id: uid(), name: match ? match[1] : s, section: match ? match[2].toUpperCase() : '' });
+  });
+  render();
+}
+
+function toggleDay(day, checked) {
+  if (checked) { if (!state.days.includes(day)) state.days.push(day); }
+  else { state.days = state.days.filter(d => d !== day); }
+}
+
+function resizeBreaks(type, n) {
+  const arr = type === 'full' ? state.fullDayBreaks : state.halfDayBreaks;
+  while (arr.length < n) arr.push({ afterPeriod: Math.floor((type==='full'?state.fullDayPeriods:state.halfDayPeriods)/2), duration: type==='full'?30:15, label: arr.length===0?'Lunch Break':'Short Break' });
+  arr.splice(n);
+}
+
+function updateTiming(type, idx, key, val) {
+  const arr = type === 'full' ? state.fullDayTimings : state.halfDayTimings;
+  if (!arr[idx]) arr[idx] = { start: '08:00', end: '08:45' };
+  arr[idx][key] = val;
+}
+
+function autoInitTimings() {
+  const slots = buildSlotList(state.fullDayPeriods, state.fullDayBreaks);
+  if (state.fullDayTimings.length === 0) state.fullDayTimings = slots.map(() => ({ start: '08:00', end: '08:45' }));
+  const hSlots = buildSlotList(state.halfDayPeriods, state.halfDayBreaks);
+  if (state.halfDayTimings.length === 0) state.halfDayTimings = hSlots.map(() => ({ start: '08:00', end: '08:45' }));
+}
+
+function autoFillTimings(type) {
+  const start = prompt('Enter start time for Period 1 (HH:MM):', '08:00');
+  if (!start || !/^\d{2}:\d{2}$/.test(start)) return;
+  const periodDur = type === 'full' ? 45 : 40;
+  const numPeriods = type === 'full' ? state.fullDayPeriods : state.halfDayPeriods;
+  const breaks = type === 'full' ? state.fullDayBreaks : state.halfDayBreaks;
+  const slots = buildSlotList(numPeriods, breaks);
+  const arr = type === 'full' ? state.fullDayTimings : state.halfDayTimings;
+  arr.length = 0;
+  let cur = start;
+  slots.forEach((slot, i) => {
+    if (slot.isBreak) {
+      const dur = breaks[slot.breakIdx].duration;
+      arr.push({ start: cur, end: timeAdd(cur, dur) });
+      cur = timeAdd(cur, dur);
+    } else {
+      arr.push({ start: cur, end: timeAdd(cur, periodDur) });
+      cur = timeAdd(cur, periodDur);
+    }
+  });
+  render();
+}
+
+function validateStep1() {
+  if (!state.schoolName.trim()) return alert('Please enter school name.');
+  if (state.classrooms.length === 0) return alert('Please add at least one classroom.');
+  if (state.days.length === 0) return alert('Please select at least one school day.');
+  autoInitTimings();
+  nextStep();
+}
+
+// ══════════════════════════════════════════════
+// STEP 2 — TEACHER INPUT
+// ══════════════════════════════════════════════
+function renderStep2() {
+  const teacherCards = state.teachers.map((t, ti) => renderTeacherCard(t, ti)).join('');
+  const allSubjects = collectAllSubjects();
+
+  return `
+  <div class="step-header">
+    <div class="step-label">Step 2 of 5</div>
+    <h1 class="step-title">Teacher Input</h1>
+    <p class="step-desc">Add teachers, assign subjects and classes, mark class teachers, and set period counts.</p>
+  </div>
+
+  <div class="alert alert-info">
+    <span class="alert-icon">ℹ️</span>
+    <div>Add teachers one by one. For each teacher, specify which subjects they teach in which classes and how many periods per week. Class teachers automatically get Period 1 in their own class.</div>
+  </div>
+
+  ${teacherCards || `<div class="empty-state"><div class="empty-state-icon">👩‍🏫</div><div class="empty-state-text">No teachers added yet. Click "Add Teacher" to start.</div></div>`}
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="addTeacher()">+ Add Teacher</button>
+    <button class="btn btn-secondary" onclick="addTeacherBulk()">+ Bulk Add Names</button>
+  </div>
+
+  ${state.teachers.length > 0 ? `
+  <div class="card mt-16">
+    <div class="card-title">📊 Summary</div>
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-num">${state.teachers.length}</div><div class="stat-label">Teachers</div></div>
+      <div class="stat-card"><div class="stat-num">${state.teachers.filter(t=>t.isClassTeacher).length}</div><div class="stat-label">Class Teachers</div></div>
+      <div class="stat-card"><div class="stat-num">${allSubjects.length}</div><div class="stat-label">Unique Subjects</div></div>
+    </div>
+  </div>` : ''}
+
+  <div class="step-nav-bar">
+    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+    <button class="btn btn-primary btn-lg" onclick="validateStep2()">Continue to Rules →</button>
+  </div>`;
+}
+
+function renderTeacherCard(t, ti) {
+  const subjRows = t.subjects.map((s, si) => `
+    <div class="subj-assign-row">
+      <select onchange="state.teachers[${ti}].subjects[${si}].classId=this.value">
+        ${state.classrooms.map(c=>`<option value="${c.id}" ${s.classId===c.id?'selected':''}>${c.name}${c.section?' '+c.section:''}</option>`).join('')}
+      </select>
+      <input type="text" placeholder="Subject name" value="${s.subject}" oninput="state.teachers[${ti}].subjects[${si}].subject=this.value">
+      <input type="number" min="1" max="10" value="${s.periodsPerWeek}" title="Periods/week" oninput="state.teachers[${ti}].subjects[${si}].periodsPerWeek=+this.value">
+      <label title="Double period?" class="check-row" style="justify-content:center;padding:0">
+        <input type="checkbox" ${s.isDouble?'checked':''} onchange="state.teachers[${ti}].subjects[${si}].isDouble=this.checked" title="Double period">
+        <span style="font-size:10px">Dbl</span>
+      </label>
+      <label title="Core subject?" class="check-row" style="justify-content:center;padding:0">
+        <input type="checkbox" ${s.isCore?'checked':''} onchange="state.teachers[${ti}].subjects[${si}].isCore=this.checked" title="Core subject">
+        <span style="font-size:10px">Core</span>
+      </label>
+      <button class="btn btn-ghost btn-sm" onclick="removeSubjectAssign(${ti},${si})">✕</button>
+    </div>
+  `).join('');
+
+  const ctOpts = state.classrooms.map(c=>`<option value="${c.id}" ${t.classTeacherOf===c.id?'selected':''}>${c.name}${c.section?' '+c.section:''}</option>`).join('');
+  const totalPeriods = t.subjects.reduce((a,s)=>a+(s.periodsPerWeek||0),0);
+
+  return `
+  <div class="teacher-card">
+    <div class="teacher-card-header collapse-toggle" onclick="toggleTeacherExpand('${t.id}')">
+      <div class="teacher-avatar">${t.code || t.name.substring(0,2).toUpperCase()}</div>
+      <div>
+        <div class="teacher-name">${t.name || '<em class="text-mute">Unnamed Teacher</em>'}</div>
+        <div class="teacher-meta">
+          <span class="teacher-code">${t.code}</span>
+          ${t.isClassTeacher ? `<span class="tag tag-ct">CT: ${state.classrooms.find(c=>c.id===t.classTeacherOf)?.name||'?'}${state.classrooms.find(c=>c.id===t.classTeacherOf)?.section||''}</span>` : '<span class="tag tag-sub">Subject Teacher</span>'}
+          <span class="tag" style="background:var(--paper-mid);color:var(--ink-soft)">${totalPeriods} periods/wk</span>
+          ${t.subjects.length > 0 ? `<span class="tag tag-sub">${t.subjects.map(s=>s.subject).filter(Boolean).slice(0,3).join(', ')}</span>` : ''}
+        </div>
+      </div>
+      <span class="collapse-arrow ml-auto" id="arrow-${t.id}">▼</span>
+      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeTeacher('${t.id}')">Remove</button>
+    </div>
+    <div class="collapsible-body open" id="tbody-${t.id}">
+      <div class="form-row cols-3" style="margin-bottom:12px">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" value="${t.name}" placeholder="e.g. Anita Sharma" oninput="updateTeacherName('${t.id}',this.value)">
+        </div>
+        <div class="form-group">
+          <label>Code <span class="hint">(auto-generated)</span></label>
+          <input type="text" value="${t.code}" oninput="state.teachers.find(x=>x.id==='${t.id}').code=this.value" class="mono">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select onchange="updateTeacherRole('${t.id}',this.value)">
+            <option value="subject" ${!t.isClassTeacher?'selected':''}>Subject Teacher</option>
+            <option value="ct" ${t.isClassTeacher?'selected':''}>Class Teacher</option>
+          </select>
+        </div>
+      </div>
+      ${t.isClassTeacher ? `
+      <div class="form-row cols-2" style="margin-bottom:12px">
+        <div class="form-group">
+          <label>Class Teacher of</label>
+          <select onchange="state.teachers.find(x=>x.id==='${t.id}').classTeacherOf=this.value">
+            <option value="">— Select Class —</option>
+            ${ctOpts}
+          </select>
+        </div>
+      </div>` : ''}
+      <div style="margin-bottom:8px">
+        <div class="subj-assign-row subj-assign-header">
+          <span>Class</span><span>Subject</span><span>Periods/Wk</span><span>Double</span><span>Core</span><span></span>
+        </div>
+        ${subjRows}
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="addSubjectAssign('${t.id}')">+ Add Subject Assignment</button>
+    </div>
+  </div>`;
+}
+
+function bindStep2() {}
+
+function updateTeacherName(id, val) {
+  const t = state.teachers.find(x => x.id === id);
+  t.name = val;
+  const existing = state.teachers.filter(x => x.id !== id).map(x => x.code);
+  t.code = genTeacherCode(val, existing);
+  // re-render just teacher cards section without full render to preserve focus? For simplicity, full render
+  // Actually just update the display name element
+}
+
+function updateTeacherRole(id, val) {
+  const t = state.teachers.find(x => x.id === id);
+  t.isClassTeacher = val === 'ct';
+  render();
+}
+
+function toggleTeacherExpand(id) {
+  const body = document.getElementById(`tbody-${id}`);
+  const arrow = document.getElementById(`arrow-${id}`);
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function addTeacher() {
+  const existing = state.teachers.map(t => t.code);
+  const t = { id: uid(), name: '', code: 'T'+(state.teachers.length+1), isClassTeacher: false, classTeacherOf: '', subjects: [] };
+  state.teachers.push(t);
+  render();
+}
+
+function addTeacherBulk() {
+  const names = prompt('Enter teacher names separated by commas:');
+  if (!names) return;
+  names.split(',').forEach(name => {
+    name = name.trim();
+    if (!name) return;
+    const existing = state.teachers.map(t => t.code);
+    state.teachers.push({ id: uid(), name, code: genTeacherCode(name, existing), isClassTeacher: false, classTeacherOf: '', subjects: [] });
+  });
+  render();
+}
+
+function removeTeacher(id) {
+  state.teachers = state.teachers.filter(t => t.id !== id);
+  render();
+}
+
+function addSubjectAssign(teacherId) {
+  const t = state.teachers.find(x => x.id === teacherId);
+  t.subjects.push({ classId: state.classrooms[0]?.id || '', subject: '', periodsPerWeek: 4, isDouble: false, isCore: false });
+  render();
+}
+
+function removeSubjectAssign(ti, si) {
+  state.teachers[ti].subjects.splice(si, 1);
+  render();
+}
+
+function collectAllSubjects() {
+  const s = new Set();
+  state.teachers.forEach(t => t.subjects.forEach(sub => { if (sub.subject) s.add(sub.subject); }));
+  return [...s];
+}
+
+function validateStep2() {
+  if (state.teachers.length === 0) return alert('Please add at least one teacher.');
+  nextStep();
+}
+
+// ══════════════════════════════════════════════
+// STEP 3 — CONSTRAINTS & RULES
+// ══════════════════════════════════════════════
+function renderStep3() {
+  const rules = [
+    { icon: '🏫', text: 'Class teachers teach Period 1 in their own class (their subject).', key: 'ct_period1' },
+    { icon: '🆓', text: 'Subject teachers are free in Period 1.', key: 'subj_free_p1' },
+    { icon: '🔗', text: 'Double-period subjects only in slots 2-3, 3-4, 6-7, or 7-8.', key: 'double_slots' },
+    { icon: '📚', text: 'Core subjects preferably scheduled before lunch (Periods 1–5).', key: 'core_before_lunch' },
+    { icon: '⏱', text: 'No teacher teaches more than 3 consecutive periods without a break.', key: 'no_3consec' },
+    { icon: '📊', text: `Each teacher's weekly load stays between ${state.minPeriodsPerTeacher} and ${state.maxPeriodsPerTeacher} periods.`, key: 'load_limits' },
+    { icon: '📌', text: `Period ${state.fixedPeriod} every day is fixed as "${state.fixedPeriodSubject}" across all classes.`, key: 'fixed_period' },
+    { icon: '🙏', text: `Period ${state.valueEdPeriod} across all days is designated for Value Education.`, key: 'value_ed' },
+    { icon: '☀️', text: `${state.halfDay || 'No day'} is a half-day with ${state.halfDayPeriods} periods.`, key: 'half_day' },
+    { icon: '🔄', text: 'Same subject not repeated on the same day for a class (where possible).', key: 'no_repeat_day' },
+  ];
+
+  const customRows = state.customRules.map((r,i) => `
+    <div class="class-row">
+      <input type="text" value="${r}" placeholder="Custom rule..." oninput="state.customRules[${i}]=this.value" style="flex:1">
+      <button class="btn btn-ghost btn-sm" onclick="state.customRules.splice(${i},1);render()">✕</button>
+    </div>
+  `).join('');
+
+  return `
+  <div class="step-header">
+    <div class="step-label">Step 3 of 5</div>
+    <h1 class="step-title">Constraints & Rules</h1>
+    <p class="step-desc">Review the scheduling rules that will be applied. All rules are active by default — you may add custom notes.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✅ Active Scheduling Rules</div>
+    ${rules.map(r => `
+      <div class="rule-item">
+        <span class="rule-icon">${r.icon}</span>
+        <span class="rule-text">${r.text}</span>
+        <span class="rule-status">Active</span>
+      </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-title">✏️ Custom Rules / Notes</div>
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <span>These are stored as notes and displayed on the exported timetable. They do not affect the algorithm.</span>
+    </div>
+    ${customRows}
+    <button class="btn btn-secondary btn-sm mt-8" onclick="state.customRules.push('');render()">+ Add Custom Note</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔍 Pre-generation Checklist</div>
+    ${renderChecklist()}
+  </div>
+
+  <div class="step-nav-bar">
+    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+    <button class="btn btn-green btn-lg" onclick="nextStep()">Generate Timetable ⚡</button>
+  </div>`;
+}
+
+function renderChecklist() {
+  const issues = collectIssues();
+  if (issues.length === 0) {
+    return `<div class="alert alert-success"><span class="alert-icon">✅</span><strong>All checks passed!</strong> Ready to generate timetable.</div>`;
+  }
+  return `
+    <div class="alert alert-warn"><span class="alert-icon">⚠️</span><strong>${issues.length} issue(s) found</strong> — you can still generate, but review below:</div>
+    <ul class="conflicts-list">${issues.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+}
+
+function collectIssues() {
+  const issues = [];
+  if (state.teachers.length === 0) issues.push('No teachers added.');
+  if (state.classrooms.length === 0) issues.push('No classrooms added.');
+  const unnamedTeachers = state.teachers.filter(t => !t.name.trim());
+  if (unnamedTeachers.length) issues.push(`${unnamedTeachers.length} teacher(s) have no name.`);
+  const ctTeachers = state.teachers.filter(t => t.isClassTeacher);
+  state.classrooms.forEach(c => {
+    const ct = ctTeachers.find(t => t.classTeacherOf === c.id);
+    if (!ct) issues.push(`Class ${c.name}${c.section?' '+c.section:''} has no class teacher assigned.`);
+  });
+  state.teachers.forEach(t => {
+    const total = t.subjects.reduce((a,s)=>a+s.periodsPerWeek,0);
+    if (total > state.maxPeriodsPerTeacher) issues.push(`${t.name} has ${total} periods/wk — exceeds max (${state.maxPeriodsPerTeacher}).`);
+    if (total > 0 && total < state.minPeriodsPerTeacher) issues.push(`${t.name} has only ${total} periods/wk — below min (${state.minPeriodsPerTeacher}).`);
+  });
+  return issues;
+}
+
+function bindStep3() {}
+
+// ══════════════════════════════════════════════
+// STEP 4 — GENERATE TIMETABLE
+// ══════════════════════════════════════════════
+function renderStep4() {
+  return `
+  <div class="step-header">
+    <div class="step-label">Step 4 of 5</div>
+    <h1 class="step-title">Generate Timetable</h1>
+    <p class="step-desc">The algorithm will now generate a complete timetable for ${state.schoolName || 'your school'} based on all inputs.</p>
+  </div>
+  <div class="card" id="genCard">
+    <div class="loader-wrap">
+      <div class="loader"></div>
+      <div style="font-size:14px;color:var(--ink-mute)">Running scheduling algorithm…</div>
+    </div>
+  </div>`;
+}
+
+function bindStep4() {
+  setTimeout(() => {
+    try {
+      generateTimetable();
+    } catch(e) {
+      document.getElementById('genCard').innerHTML = `<div class="alert alert-error"><span class="alert-icon">❌</span><strong>Error:</strong> ${e.message}</div>`;
+    }
+  }, 400);
+}
+
+// ══════════════════════════════════════════════
+// SCHEDULING ALGORITHM
+// ══════════════════════════════════════════════
+function generateTimetable() {
+  const days = state.days;
+  const classes = state.classrooms;
+  const teachers = state.teachers;
+  const conflicts = [];
+  const teacherLoads = {};
+  teachers.forEach(t => teacherLoads[t.code] = 0);
+
+  // Build timetable structure: tt[classId][day] = array of slot objects
+  const tt = {};
+  classes.forEach(cls => {
+    tt[cls.id] = {};
+    days.forEach(day => {
+      const isHalfDay = state.halfDay && day === state.halfDay;
+      const numPeriods = isHalfDay ? state.halfDayPeriods : state.fullDayPeriods;
+      const breaks = isHalfDay ? state.halfDayBreaks : state.fullDayBreaks;
+      const slots = buildSlotList(numPeriods, breaks);
+      tt[cls.id][day] = slots.map(s => {
+        if (s.isBreak) return { isBreak: true, breakLabel: state.fullDayBreaks[s.breakIdx]?.label || 'Break' };
+        return { isBreak: false, subject: null, teacherCode: null, isFree: false };
+      });
+    });
+  });
+
+  // Track teacher availability: teacherAvail[teacherCode][day][slotIdx] = true if busy
+  const teacherAvail = {};
+  teachers.forEach(t => {
+    teacherAvail[t.code] = {};
+    days.forEach(d => {
+      const isHalf = state.halfDay && d === state.halfDay;
+      const n = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+      const breaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+      teacherAvail[t.code][d] = new Array(buildSlotList(n,breaks).length).fill(false);
+    });
+  });
+
+  // Helper: get period slot index (non-break) by period number
+  function getPeriodSlotIdx(day, periodNum) {
+    const isHalf = state.halfDay && day === state.halfDay;
+    const n = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+    const breaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+    const slots = buildSlotList(n, breaks);
+    let pCount = 0;
+    for (let i = 0; i < slots.length; i++) {
+      if (!slots[i].isBreak) { pCount++; if (pCount === periodNum) return i; }
+    }
+    return -1;
+  }
+
+  // Helper: assign a slot
+  function assign(classId, day, slotIdx, subject, teacherCode) {
+    tt[classId][day][slotIdx].subject = subject;
+    tt[classId][day][slotIdx].teacherCode = teacherCode;
+    if (teacherCode && teacherAvail[teacherCode] && teacherAvail[teacherCode][day]) {
+      teacherAvail[teacherCode][day][slotIdx] = true;
+    }
+    if (teacherCode && teacherLoads[teacherCode] !== undefined) teacherLoads[teacherCode]++;
+  }
+
+  function isSlotFree(classId, day, slotIdx) {
+    const slot = tt[classId][day][slotIdx];
+    return slot && !slot.isBreak && !slot.subject;
+  }
+
+  function isTeacherFree(teacherCode, day, slotIdx) {
+    return teacherAvail[teacherCode] && teacherAvail[teacherCode][day] && !teacherAvail[teacherCode][day][slotIdx];
+  }
+
+  // STEP A: Fixed period across all classes and days
+  days.forEach(day => {
+    classes.forEach(cls => {
+      const si = getPeriodSlotIdx(day, state.fixedPeriod);
+      if (si >= 0 && isSlotFree(cls.id, day, si)) {
+        tt[cls.id][day][si].subject = state.fixedPeriodSubject;
+        tt[cls.id][day][si].teacherCode = '—';
+      }
+    });
+  });
+
+  // STEP B: Class teachers — Period 1 in their class
+  const ctTeachers = teachers.filter(t => t.isClassTeacher && t.classTeacherOf);
+  ctTeachers.forEach(ct => {
+    days.forEach(day => {
+      const si = getPeriodSlotIdx(day, 1);
+      if (si < 0) return;
+      if (!isSlotFree(ct.classTeacherOf, day, si)) return;
+      // Find the subject this teacher teaches to this class
+      const subj = ct.subjects.find(s => s.classId === ct.classTeacherOf);
+      const subjName = subj ? subj.subject : (ct.subjects[0]?.subject || 'Class Hour');
+      if (isTeacherFree(ct.code, day, si)) {
+        assign(ct.classTeacherOf, day, si, subjName, ct.code);
+      }
+    });
+  });
+
+  // STEP C: Value Ed period
+  days.forEach(day => {
+    classes.forEach(cls => {
+      const si = getPeriodSlotIdx(day, state.valueEdPeriod);
+      if (si >= 0 && isSlotFree(cls.id, day, si)) {
+        tt[cls.id][day][si].subject = 'Value Education';
+        tt[cls.id][day][si].teacherCode = '—';
+      }
+    });
+  });
+
+  // STEP D: Build assignment pool — for each teacher, each subject-class, distribute periods across week
+  const assignmentPool = [];
+  teachers.forEach(t => {
+    t.subjects.forEach(s => {
+      const cls = classes.find(c => c.id === s.classId);
+      if (!cls || !s.subject || !s.periodsPerWeek) return;
+      for (let i = 0; i < s.periodsPerWeek; i++) {
+        assignmentPool.push({ teacherCode: t.code, classId: s.classId, subject: s.subject, isDouble: s.isDouble && i % 2 === 0, isCore: s.isCore });
+      }
+    });
+  });
+
+  // Shuffle pool for variety
+  for (let i = assignmentPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [assignmentPool[i], assignmentPool[j]] = [assignmentPool[j], assignmentPool[i]];
+  }
+
+  // DOUBLE_PERIOD valid slot-pairs (by period number): [2,3],[3,4],[6,7],[7,8]
+  const doublePairs = [[2,3],[3,4],[6,7],[7,8]];
+
+  // STEP E: Place assignments
+  assignmentPool.forEach(item => {
+    let placed = false;
+
+    if (item.isDouble) {
+      // Try to place double period in valid pairs
+      const shuffledDays = [...days].sort(() => Math.random()-0.5);
+      for (const day of shuffledDays) {
+        if (placed) break;
+        for (const pair of doublePairs) {
+          const si1 = getPeriodSlotIdx(day, pair[0]);
+          const si2 = getPeriodSlotIdx(day, pair[1]);
+          if (si1 < 0 || si2 < 0) continue;
+          if (isSlotFree(item.classId, day, si1) && isSlotFree(item.classId, day, si2) &&
+              isTeacherFree(item.teacherCode, day, si1) && isTeacherFree(item.teacherCode, day, si2)) {
+            assign(item.classId, day, si1, item.subject, item.teacherCode);
+            tt[item.classId][day][si2].subject = item.subject;
+            tt[item.classId][day][si2].teacherCode = item.teacherCode;
+            tt[item.classId][day][si1].isDouble = true;
+            tt[item.classId][day][si2].isDouble = true;
+            if (teacherAvail[item.teacherCode]?.[day]) teacherAvail[item.teacherCode][day][si2] = true;
+            if (teacherLoads[item.teacherCode] !== undefined) teacherLoads[item.teacherCode]++;
+            placed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!placed) {
+      // For core subjects prefer early periods (1-5)
+      const preferEarly = item.isCore;
+      const shuffledDays = [...days].sort(() => Math.random()-0.5);
+
+      for (const day of shuffledDays) {
+        if (placed) break;
+        const isHalf = state.halfDay && day === state.halfDay;
+        const n = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+        const breaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+        const slots = buildSlotList(n, breaks);
+        let periodIndices = [];
+        let pNum = 0;
+        slots.forEach((sl, idx) => {
+          if (!sl.isBreak) {
+            pNum++;
+            periodIndices.push({ idx, pNum });
+          }
+        });
+
+        if (preferEarly) {
+          periodIndices.sort((a,b) => a.pNum - b.pNum);
+        } else {
+          periodIndices.sort(() => Math.random() - 0.5);
+        }
+
+        // Check consecutive constraint: teacher shouldn't have 3 consecutive periods
+        for (const {idx, pNum} of periodIndices) {
+          if (!isSlotFree(item.classId, day, idx)) continue;
+          if (!isTeacherFree(item.teacherCode, day, idx)) continue;
+
+          // Check 3-consecutive constraint
+          let consec = 1;
+          // check backwards
+          for (let k = idx - 1; k >= 0; k--) {
+            if (tt[item.classId][day][k]?.isBreak) break;
+            if (teacherAvail[item.teacherCode]?.[day]?.[k]) consec++;
+            else break;
+          }
+          // check forwards
+          for (let k = idx + 1; k < slots.length; k++) {
+            if (tt[item.classId][day][k]?.isBreak) break;
+            if (teacherAvail[item.teacherCode]?.[day]?.[k]) consec++;
+            else break;
+          }
+          if (consec > 3) continue;
+
+          // Don't repeat same subject twice on same day for same class
+          const daySlots = tt[item.classId][day];
+          const alreadyToday = daySlots.some(sl => !sl.isBreak && sl.subject === item.subject);
+          if (alreadyToday) continue;
+
+          assign(item.classId, day, idx, item.subject, item.teacherCode);
+          placed = true;
+          break;
+        }
+      }
+    }
+
+    if (!placed) {
+      conflicts.push(`Could not schedule: ${item.subject} for class ${classes.find(c=>c.id===item.classId)?.name || '?'} (teacher: ${item.teacherCode})`);
+    }
+  });
+
+  // Mark free periods
+  classes.forEach(cls => {
+    days.forEach(day => {
+      tt[cls.id][day].forEach(slot => {
+        if (!slot.isBreak && !slot.subject) slot.isFree = true;
+      });
+    });
+  });
+
+  state.timetable = tt;
+  state.conflicts = conflicts;
+  state.teacherLoads = teacherLoads;
+
+  // Show results
+  const card = document.getElementById('genCard');
+  if (!card) return;
+
+  const placed = Object.values(tt).reduce((a,days) =>
+    a + Object.values(days).reduce((b,slots) =>
+      b + slots.filter(s => !s.isBreak && !s.isFree && s.subject && s.subject !== state.fixedPeriodSubject && s.subject !== 'Value Education').length, 0), 0);
+
+  card.innerHTML = `
+    <div class="alert alert-success" style="margin-bottom:16px">
+      <span class="alert-icon">✅</span>
+      <div><strong>Timetable generated!</strong> ${placed} period slots assigned across ${state.classrooms.length} classes.</div>
+    </div>
+    ${conflicts.length > 0 ? `
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div><strong>${conflicts.length} scheduling conflict(s):</strong>
+          <ul class="mt-8" style="padding-left:16px;font-size:12px">${conflicts.map(c=>`<li>${c}</li>`).join('')}</ul>
+        </div>
+      </div>` : ''}
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-num">${placed}</div><div class="stat-label">Slots Filled</div></div>
+      <div class="stat-card"><div class="stat-num">${state.classrooms.length}</div><div class="stat-label">Classes</div></div>
+      <div class="stat-card"><div class="stat-num">${conflicts.length}</div><div class="stat-label">Conflicts</div></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary btn-lg" onclick="nextStep()">View Timetable →</button>
+      <button class="btn btn-secondary" onclick="generateTimetable()">🔄 Re-generate</button>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+// STEP 5 — VIEW & EXPORT
+// ══════════════════════════════════════════════
+function renderStep5() {
+  if (!state.timetable) return `<div class="alert alert-error">No timetable generated. Go back to Step 4.</div>`;
+
+  const tabs = ['By Class','By Teacher','By Day'];
+  const activeTab = state.viewTab || 'By Class';
+
+  return `
+  <div class="step-header">
+    <div class="step-label">Step 5 of 5</div>
+    <h1 class="step-title">Timetable — ${state.schoolName || 'School'}</h1>
+    <p class="step-desc">View, filter and export the complete timetable. Use the tabs to switch views.</p>
+  </div>
+
+  ${state.conflicts.length > 0 ? `
+  <div class="alert alert-warn">
+    <span class="alert-icon">⚠️</span>
+    <div><strong>${state.conflicts.length} unresolved conflict(s).</strong> Consider going back to Step 2 to adjust period counts or add more teachers.</div>
+  </div>` : ''}
+
+  <div class="btn-group" style="margin-bottom:16px">
+    <button class="btn btn-primary" onclick="window.print()">🖨 Print</button>
+    <button class="btn btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-secondary" onclick="exportHTMLFile()">⬇ Export HTML</button>
+    <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+  </div>
+
+  <div class="tab-bar">
+    ${tabs.map(t=>`<button class="tab-btn ${activeTab===t?'active':''}" onclick="switchTTTab('${t}')">${t}</button>`).join('')}
+  </div>
+
+  <div id="ttContent">${renderTTContent(activeTab)}</div>`;
+}
+
+function bindStep5() {}
+
+function switchTTTab(tab) {
+  state.viewTab = tab;
+  document.getElementById('ttContent').innerHTML = renderTTContent(tab);
+}
+
+function renderTTContent(tab) {
+  if (tab === 'By Class') return renderByClass();
+  if (tab === 'By Teacher') return renderByTeacher();
+  if (tab === 'By Day') return renderByDay();
+  return '';
+}
+
+function renderByClass() {
+  return state.classrooms.map(cls => `
+    <div class="card">
+      <div class="card-title">🎒 Class ${cls.name}${cls.section?' '+cls.section:''}</div>
+      ${renderClassTimetable(cls.id)}
+    </div>
+  `).join('');
+}
+
+function renderClassTimetable(classId) {
+  const days = state.days;
+  // Build header: days as columns, periods as rows
+  // Actually better: days as rows, periods as columns
+  // Get max periods for header
+  const maxPeriods = state.fullDayPeriods;
+  const breaks = state.fullDayBreaks;
+  const slots = buildSlotList(maxPeriods, breaks);
+
+  const headerCols = slots.map(sl => sl.isBreak ?
+    `<th style="background:#f0ede6;color:var(--ink-mute);font-size:10px">⬛ Break</th>` :
+    `<th>P${sl.periodNum}<br><small style="font-weight:400;font-size:10px">${getSlotTime('full', slots.indexOf(sl))}</small></th>`
+  ).join('');
+
+  const rows = days.map(day => {
+    const isHalf = state.halfDay && day === state.halfDay;
+    const numP = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+    const dayBreaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+    const daySlots = buildSlotList(numP, dayBreaks);
+    const ttSlots = state.timetable[classId]?.[day] || [];
+
+    const cells = slots.map((sl, fullIdx) => {
+      if (sl.isBreak) {
+        // Show break if this day has a break at this position
+        const correspondingBreak = daySlots[fullIdx];
+        if (correspondingBreak?.isBreak) {
+          return `<td><div class="tt-cell break-cell"><span>${ttSlots[fullIdx]?.breakLabel || 'Break'}</span></div></td>`;
+        }
+        return `<td style="background:#f9f9f9"></td>`;
+      }
+      const slot = ttSlots[fullIdx];
+      if (!slot) return `<td><div class="tt-cell free-cell"><span>—</span></div></td>`;
+      if (slot.isBreak) return `<td><div class="tt-cell break-cell"><span>${slot.breakLabel || 'Break'}</span></div></td>`;
+      if (slot.isFree) return `<td><div class="tt-cell free-cell"><span>Free</span></div></td>`;
+      const cls = slot.isDouble ? 'tt-cell double' : (sl.periodNum === 1 ? 'tt-cell period1' : 'tt-cell');
+      return `<td><div class="${cls}">
+        <span class="subj">${slot.subject || '—'}</span>
+        <span class="teacher-code-sm">${slot.teacherCode || ''}</span>
+      </div></td>`;
+    }).join('');
+
+    return `<tr>
+      <td class="tt-row-day">
+        <div class="day-label">${day.slice(0,3)}</div>
+        ${isHalf ? `<span class="half-badge">Half</span>` : ''}
+      </td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  return `<div class="tt-wrap"><table class="tt-table">
+    <thead><tr><th class="day-col">Day</th>${headerCols}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function getSlotTime(type, idx) {
+  const arr = type === 'full' ? state.fullDayTimings : state.halfDayTimings;
+  if (arr[idx]) return arr[idx].start;
+  return '';
+}
+
+function renderByTeacher() {
+  return state.teachers.map(t => {
+    const days = state.days;
+    const teacherSlots = []; // {day, periodNum, classLabel, subject}
+
+    days.forEach(day => {
+      const isHalf = state.halfDay && day === state.halfDay;
+      const n = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+      const breaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+      const slots = buildSlotList(n, breaks);
+
+      state.classrooms.forEach(cls => {
+        const ttSlots = state.timetable[cls.id]?.[day] || [];
+        ttSlots.forEach((sl, si) => {
+          if (!sl.isBreak && sl.teacherCode === t.code) {
+            teacherSlots.push({ day, slotIdx: si, classLabel: `${cls.name}${cls.section?' '+cls.section:''}`, subject: sl.subject });
+          }
+        });
+      });
+    });
+
+    const maxPeriods = state.fullDayPeriods;
+    const fullSlots = buildSlotList(maxPeriods, state.fullDayBreaks);
+
+    const headerCols = fullSlots.map(sl => sl.isBreak ?
+      `<th style="background:#f0ede6;color:var(--ink-mute);font-size:10px">Break</th>` :
+      `<th>P${sl.periodNum}</th>`
+    ).join('');
+
+    const rows = days.map(day => {
+      const isHalf = state.halfDay && day === state.halfDay;
+      const daySlots = buildSlotList(isHalf?state.halfDayPeriods:state.fullDayPeriods, isHalf?state.halfDayBreaks:state.fullDayBreaks);
+
+      const cells = fullSlots.map((sl, fi) => {
+        if (sl.isBreak) {
+          const corr = daySlots[fi];
+          return corr?.isBreak ? `<td><div class="tt-cell break-cell"><span>Break</span></div></td>` : `<td></td>`;
+        }
+        // Find if teacher teaches any class in this slot
+        let found = null;
+        state.classrooms.forEach(cls => {
+          const slotData = state.timetable[cls.id]?.[day]?.[fi];
+          if (slotData && !slotData.isBreak && slotData.teacherCode === t.code) {
+            found = { cls: `${cls.name}${cls.section?' '+cls.section:''}`, subject: slotData.subject };
+          }
+        });
+        if (found) {
+          return `<td><div class="tt-cell">
+            <span class="subj">${found.subject}</span>
+            <span class="teacher-code-sm">${found.cls}</span>
+          </div></td>`;
+        }
+        return `<td><div class="tt-cell free-cell"><span>Free</span></div></td>`;
+      }).join('');
+
+      return `<tr>
+        <td class="tt-row-day"><div class="day-label">${day.slice(0,3)}</div></td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    const weeklyLoad = state.teacherLoads[t.code] || 0;
+    return `
+    <div class="card">
+      <div class="card-title">
+        👤 ${t.name} <span class="teacher-code" style="margin-left:8px">${t.code}</span>
+        <span class="badge">${weeklyLoad} periods/wk</span>
+        ${t.isClassTeacher ? `<span class="tag tag-ct" style="margin-left:4px">CT: ${state.classrooms.find(c=>c.id===t.classTeacherOf)?.name||''}${state.classrooms.find(c=>c.id===t.classTeacherOf)?.section||''}</span>` : ''}
+      </div>
+      <div class="tt-wrap"><table class="tt-table">
+        <thead><tr><th class="day-col">Day</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+}
+
+function renderByDay() {
+  return state.days.map(day => {
+    const isHalf = state.halfDay && day === state.halfDay;
+    const n = isHalf ? state.halfDayPeriods : state.fullDayPeriods;
+    const breaks = isHalf ? state.halfDayBreaks : state.fullDayBreaks;
+    const slots = buildSlotList(n, breaks);
+
+    const headerCols = slots.map((sl, i) => {
+      const t = isHalf ? state.halfDayTimings[i] : state.fullDayTimings[i];
+      return sl.isBreak ?
+        `<th style="background:#f0ede6;color:var(--ink-mute);font-size:10px">Break<br>${t?t.start:''}` :
+        `<th>P${sl.periodNum}<br><small style="font-weight:400;font-size:10px">${t?t.start:''}</small></th>`;
+    }).join('');
+
+    const rows = state.classrooms.map(cls => {
+      const ttSlots = state.timetable[cls.id]?.[day] || [];
+      const cells = slots.map((sl, i) => {
+        const slot = ttSlots[i];
+        if (!slot) return `<td></td>`;
+        if (slot.isBreak) return `<td><div class="tt-cell break-cell"><span>${slot.breakLabel||'Break'}</span></div></td>`;
+        if (slot.isFree) return `<td><div class="tt-cell free-cell"><span>Free</span></div></td>`;
+        const c = slot.isDouble ? 'tt-cell double' : (sl.periodNum===1?'tt-cell period1':'tt-cell');
+        return `<td><div class="${c}">
+          <span class="subj">${slot.subject||'—'}</span>
+          <span class="teacher-code-sm">${slot.teacherCode||''}</span>
+        </div></td>`;
+      }).join('');
+      return `<tr>
+        <td class="tt-row-day"><div class="day-label">${cls.name}${cls.section?' '+cls.section:''}</div></td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    return `
+    <div class="card">
+      <div class="card-title">📅 ${day} ${isHalf ? '<span class="tag tag-ct">Half Day</span>' : ''}</div>
+      <div class="tt-wrap"><table class="tt-table">
+        <thead><tr><th class="day-col">Class</th>${headerCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+}
+
+function exportCSV() {
+  let csv = `${state.schoolName} — Timetable\n`;
+  csv += `Board: ${state.board}\n\n`;
+  state.classrooms.forEach(cls => {
+    csv += `\nClass ${cls.name}${cls.section?' '+cls.section:''}\n`;
+    csv += `Day,${state.days.join(',')}\n`;
+    const maxP = state.fullDayPeriods;
+    const slots = buildSlotList(maxP, state.fullDayBreaks);
+    slots.forEach((sl, si) => {
+      if (sl.isBreak) {
+        csv += `Break,${state.days.map(() => 'BREAK').join(',')}\n`;
+      } else {
+        csv += `Period ${sl.periodNum},${state.days.map(day => {
+          const s = state.timetable[cls.id]?.[day]?.[si];
+          if (!s || s.isBreak) return 'BREAK';
+          if (s.isFree) return 'Free';
+          return `"${s.subject||''} (${s.teacherCode||''})"`;
+        }).join(',')}\n`;
+      }
+    });
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `timetable_${state.schoolName.replace(/\s+/g,'_')}.csv`;
+  a.click();
+}
+
+function exportHTMLFile() {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${state.schoolName} Timetable</title>
+  <style>body{font-family:sans-serif;font-size:12px;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 8px;text-align:center}th{background:#222;color:white}.break{background:#f5f0e8;font-style:italic}.free{color:#aaa}</style>
+  </head><body>
+  <h1>${state.schoolName} — Master Timetable</h1>
+  <p>Board: ${state.board} | Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+  ${state.classrooms.map(cls => {
+    const slots = buildSlotList(state.fullDayPeriods, state.fullDayBreaks);
+    const header = `<tr><th>Day</th>${slots.map(sl=>sl.isBreak?'<th>Break</th>':`<th>P${sl.periodNum}</th>`).join('')}</tr>`;
+    const rows = state.days.map(day=>{
+      const ttS = state.timetable[cls.id]?.[day]||[];
+      return `<tr><td><b>${day.slice(0,3)}</b></td>${slots.map((_,i)=>{
+        const s=ttS[i];
+        if(!s||s.isBreak)return`<td class="break">${s?.breakLabel||'Break'}</td>`;
+        if(s.isFree)return`<td class="free">Free</td>`;
+        return`<td>${s.subject||'—'}<br><small>${s.teacherCode||''}</small></td>`;
+      }).join('')}</tr>`;
+    }).join('');
+    return `<h3>Class ${cls.name}${cls.section?' '+cls.section:''}</h3><table>${header}<tbody>${rows}</tbody></table>`;
+  }).join('<br>')}
+  </body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `timetable_${state.schoolName.replace(/\s+/g,'_')}.html`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+// Set some sensible defaults
+state.fullDayBreaks = [
+  { afterPeriod: 2, duration: 15, label: 'Short Break' },
+  { afterPeriod: 5, duration: 30, label: 'Lunch Break' }
+];
+state.halfDayBreaks = [{ afterPeriod: 2, duration: 15, label: 'Short Break' }];
+autoInitTimings();
+render();
+</script>
+</body>
+</html>
